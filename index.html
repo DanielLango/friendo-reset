@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Friendo Password Reset</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .box {
+      background: white;
+      padding: 40px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #111;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 15px;
+    }
+
+    button:hover {
+      background: #333;
+    }
+
+    .msg {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .error {
+      color: red;
+    }
+
+    .success {
+      color: green;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="box">
+    <h2>🔐 Reset Password</h2>
+
+    <input
+      type="password"
+      id="password"
+      placeholder="New password"
+    />
+
+    <input
+      type="password"
+      id="confirm"
+      placeholder="Confirm password"
+    />
+
+    <button onclick="resetPassword()">
+      Reset Password
+    </button>
+
+    <div id="message" class="msg"></div>
+  </div>
+
+<script>
+  // ⚠️ PUT YOUR OWN VALUES HERE
+  const SUPABASE_URL = "https://cgchcwqtevbybjxibamz.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnY2hjd3F0ZXZieWJqeGliYW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMzY4ODksImV4cCI6MjA3NjgxMjg4OX0.2s1i2-cWPsjdnxcK0eijKJESp-AY08MNSWRIQSeLwKs";
+
+  const supabase = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+
+  function getToken() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("token") || params.get("code");
+  }
+
+  async function resetPassword() {
+    const pass = document.getElementById("password").value;
+    const confirm = document.getElementById("confirm").value;
+    const msg = document.getElementById("message");
+
+    msg.textContent = "";
+    msg.className = "msg";
+
+    if (!pass || !confirm) {
+      msg.textContent = "Fill in both fields.";
+      msg.classList.add("error");
+      return;
+    }
+
+    if (pass !== confirm) {
+      msg.textContent = "Passwords do not match.";
+      msg.classList.add("error");
+      return;
+    }
+
+    const token = getToken();
+
+    if (!token) {
+      msg.textContent = "Invalid or expired link.";
+      msg.classList.add("error");
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: pass
+    });
+
+    if (error) {
+      msg.textContent = error.message;
+      msg.classList.add("error");
+    } else {
+      msg.textContent = "Password updated successfully!";
+      msg.classList.add("success");
+    }
+  }
+</script>
+
+</body>
+</html>
