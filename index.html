@@ -1,151 +1,124 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Friendo Password Reset</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reset Password • Friendo</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f6f8;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-
-    .box {
-      background: white;
-      padding: 40px;
-      border-radius: 10px;
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 15px;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      background: #111;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 15px;
-    }
-
-    button:hover {
-      background: #333;
-    }
-
-    .msg {
-      margin-top: 15px;
-      font-size: 14px;
-    }
-
-    .error {
-      color: red;
-    }
-
-    .success {
-      color: green;
-    }
+    body{font-family:Arial,Helvetica,sans-serif;background:#f5f6f8;margin:0;padding:40px}
+    .box{max-width:460px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+    h2{margin:0 0 10px}
+    .msg{margin:10px 0 16px;font-size:14px}
+    .err{color:#b00020}
+    .ok{color:#0a7a2f}
+    label{display:block;margin:14px 0 6px;font-weight:600}
+    input{width:100%;padding:12px 14px;border:1px solid #ddd;border-radius:8px;font-size:16px;box-sizing:border-box}
+    button{margin-top:16px;width:100%;padding:12px 14px;border:0;border-radius:8px;background:#111;color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .foot{margin-top:20px;font-size:12px;color:#888;text-align:center}
+    .foot a{color:#666}
   </style>
 </head>
-
 <body>
   <div class="box">
-    <h2>🔐 Reset Password</h2>
-
-    <input
-      type="password"
-      id="password"
-      placeholder="New password"
-    />
-
-    <input
-      type="password"
-      id="confirm"
-      placeholder="Confirm password"
-    />
-
-    <button onclick="resetPassword()">
-      Reset Password
-    </button>
-
-    <div id="message" class="msg"></div>
+    <h2>🔐 Reset your password</h2>
+    <div id="status" class="msg">Validating link…</div>
+    <div id="form" style="display:none;">
+      <label>New password</label>
+      <input id="p1" type="password" autocomplete="new-password" />
+      <label>Confirm new password</label>
+      <input id="p2" type="password" autocomplete="new-password" />
+      <button id="btn">Reset password</button>
+    </div>
+    <div class="foot">
+      Daniel Lango<br>
+      ambrozitestudios@proton.me<br>
+      <a href="https://www.ambrozitestudios.com/privacy-policy-of-friendo">Privacy Policy</a>
+    </div>
   </div>
-
-<script>
-  // ⚠️ PUT YOUR OWN VALUES HERE
-  const SUPABASE_URL = "https://cgchcwqtevbybjxibamz.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnY2hjd3F0ZXZieWJqeGliYW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMzY4ODksImV4cCI6MjA3NjgxMjg4OX0.2s1i2-cWPsjdnxcK0eijKJESp-AY08MNSWRIQSeLwKs";
-
-  const supabase = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
-
-  function getToken() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get("token") || params.get("code");
-  }
-
-  async function resetPassword() {
-    const pass = document.getElementById("password").value;
-    const confirm = document.getElementById("confirm").value;
-    const msg = document.getElementById("message");
-
-    msg.textContent = "";
-    msg.className = "msg";
-
-    if (!pass || !confirm) {
-      msg.textContent = "Fill in both fields.";
-      msg.classList.add("error");
-      return;
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    const SUPABASE_URL = "https://cgchcwqtevbybjxibamz.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnY2hjd3F0ZXZieWJqeGliYW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMzY4ODksImV4cCI6MjA3NjgxMjg4OX0.2s1i2-cWPsjdnxcK0eijKJESp-AY08MNSWRIQSeLwKs";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const statusEl = document.getElementById("status");
+    const formEl = document.getElementById("form");
+    const btnEl = document.getElementById("btn");
+    
+    function setMsg(text, kind) {
+      statusEl.textContent = text;
+      statusEl.className = "msg " + (kind || "");
     }
-
-    if (pass !== confirm) {
-      msg.textContent = "Passwords do not match.";
-      msg.classList.add("error");
-      return;
+    
+    function getQuery(name) {
+      return new URLSearchParams(window.location.search).get(name);
     }
-
-    const token = getToken();
-
-    if (!token) {
-      msg.textContent = "Invalid or expired link.";
-      msg.classList.add("error");
-      return;
+    
+    function getHash(name) {
+      const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
+      return new URLSearchParams(hash).get(name);
     }
-
-    const { error } = await supabase.auth.updateUser({
-      password: pass
+    
+    async function init() {
+      try {
+        // Check for error in URL
+        const errDesc = getQuery("error_description") || getHash("error_description");
+        if (errDesc) {
+          setMsg(decodeURIComponent(errDesc.replace(/\+/g, " ")), "err");
+          return;
+        }
+        
+        // Handle access_token flow (hash)
+        const accessToken = getHash("access_token");
+        const refreshToken = getHash("refresh_token");
+        if (accessToken && refreshToken) {
+          const { error } = await sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          if (error) throw error;
+          setMsg("Link OK. Choose a new password.", "ok");
+          formEl.style.display = "block";
+          return;
+        }
+        
+        // Handle PKCE code flow (query)
+        const code = getQuery("code");
+        if (code) {
+          const { error } = await sb.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          history.replaceState({}, document.title, window.location.pathname);
+          setMsg("Link OK. Choose a new password.", "ok");
+          formEl.style.display = "block";
+          return;
+        }
+        
+        setMsg("Missing token/code. Request a new reset email.", "err");
+      } catch (e) {
+        setMsg((e && e.message) ? e.message : "Invalid or expired link. Request a new reset email.", "err");
+      }
+    }
+    
+    btnEl.addEventListener("click", async () => {
+      try {
+        btnEl.disabled = true;
+        const p1 = document.getElementById("p1").value || "";
+        const p2 = document.getElementById("p2").value || "";
+        
+        if (p1.length < 8) throw new Error("Password must be at least 8 characters.");
+        if (p1 !== p2) throw new Error("Passwords do not match.");
+        
+        setMsg("Updating password…", "");
+        const { error } = await sb.auth.updateUser({ password: p1 });
+        if (error) throw error;
+        
+        setMsg("✅ Password updated. You can return to the app and log in.", "ok");
+        formEl.style.display = "none";
+      } catch (e) {
+        setMsg((e && e.message) ? e.message : "Error updating password.", "err");
+      } finally {
+        btnEl.disabled = false;
+      }
     });
-
-    if (error) {
-      msg.textContent = error.message;
-      msg.classList.add("error");
-    } else {
-      msg.textContent = "Password updated successfully!";
-      msg.classList.add("success");
-    }
-  }
-</script>
-
+    
+    init();
+  </script>
 </body>
 </html>
