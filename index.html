@@ -1,26 +1,99 @@
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const SUPABASE_URL = "https://cgchcwqtevbybjxibamz.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnY2hjd3F0ZXZieWJqeGliYW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMzY4ODksImV4cCI6MjA3NjgxMjg4OX0.2s1i2-cWPsjdnxcK0eijKJESp-AY08MNSWRIQSeLwKs";
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reset Password</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f6f7f9}
+    .card{max-width:420px;margin:70px auto;background:#fff;padding:28px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+    input{width:100%;padding:12px;margin:8px 0;border:1px solid #ddd;border-radius:8px;font-size:15px;box-sizing:border-box}
+    button{width:100%;padding:12px;margin-top:10px;border:0;border-radius:8px;background:#111;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .msg{margin-top:12px;font-size:14px;line-height:1.4}
+    .err{color:#b00020}
+    .ok{color:#0a7a28}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Reset your password</h2>
+    <div id="status" class="msg">Validating reset link…</div>
 
-  function getHashParams() {
-    const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
-    return new URLSearchParams(hash);
-  }
+    <div id="form" style="display:none">
+      <input id="p1" type="password" placeholder="New password (min 8 chars)" autocomplete="new-password" />
+      <input id="p2" type="password" placeholder="Confirm new password" autocomplete="new-password" />
+      <button id="btn">Reset password</button>
+      <div id="msg" class="msg"></div>
+    </div>
+  </div>
 
-  async function initSessionFromHash() {
-    const p = getHashParams();
-    const access_token = p.get("access_token");
-    const refresh_token = p.get("refresh_token");
+  <script>
+    const SUPABASE_URL = "https://cgchcwqtevbybjxibamz.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnY2hjd3F0ZXZieWJqeGliYW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMzY4ODksImV4cCI6MjA3NjgxMjg4OX0.2s1i2-cWPsjdnxcK0eijKJESp-AY08MNSWRIQSeLwKs";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    if (!access_token || !refresh_token) {
-      throw new Error("Missing session tokens in link. Request a new reset email.");
+    const statusEl = document.getElementById("status");
+    const formEl = document.getElementById("form");
+    const msgEl = document.getElementById("msg");
+    const btnEl = document.getElementById("btn");
+
+    function setMsg(text, cls){
+      msgEl.className = "msg " + (cls || "");
+      msgEl.textContent = text || "";
     }
 
-    const { error } = await sb.auth.setSession({ access_token, refresh_token });
-    if (error) throw error;
-  }
+    function getHashParams() {
+      const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
+      return new URLSearchParams(hash);
+    }
 
-  // Call initSessionFromHash() on load, then allow updateUser({ password })
-</script>
+    (async () => {
+      try {
+        const p = getHashParams();
+        const access_token = p.get("access_token");
+        const refresh_token = p.get("refresh_token");
+
+        if (!access_token || !refresh_token) {
+          throw new Error("Missing tokens. Use the newest reset email link and open it once.");
+        }
+
+        const { error } = await sb.auth.setSession({ access_token, refresh_token });
+        if (error) throw error;
+
+        statusEl.textContent = "Link verified. Choose a new password.";
+        formEl.style.display = "block";
+
+        btnEl.onclick = async () => {
+          setMsg("");
+          const p1 = (document.getElementById("p1").value || "").trim();
+          const p2 = (document.getElementById("p2").value || "").trim();
+
+          if (p1.length < 8) return setMsg("Password must be at least 8 characters.", "err");
+          if (p1 !== p2) return setMsg("Passwords do not match.", "err");
+
+          btnEl.disabled = true;
+          statusEl.textContent = "Updating password…";
+
+          const { error: upErr } = await sb.auth.updateUser({ password: p1 });
+          if (upErr) {
+            btnEl.disabled = false;
+            statusEl.textContent = "Could not update password.";
+            return setMsg(upErr.message, "err");
+          }
+
+          statusEl.textContent = "Done.";
+          setMsg("✅ Password updated. Go back to the app and log in.", "ok");
+          await sb.auth.signOut();
+        };
+
+      } catch (e) {
+        statusEl.textContent = "Reset link invalid/expired.";
+        formEl.style.display = "block";
+        setMsg(e.message || "Unknown error", "err");
+      }
+    })();
+  </script>
+</body>
+</html>
